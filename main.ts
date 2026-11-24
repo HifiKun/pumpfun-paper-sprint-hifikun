@@ -19,28 +19,29 @@ const CURVE_FEE = 0.0125; // protocol 95 bps + creator 30 bps, charged on the cu
 const BPS = 10_000;
 
 // ---- tunables -------------------------------------------------------------
-const WINDOW = 40; // entry lookback, in slots
-const MIN_NET_SOL = 1.0; // net SOL inflow (buys minus sells) over WINDOW
-const MIN_BUYS = 5; // buy trades over WINDOW
-const MIN_BUYERS = 6; // distinct buying wallets over WINDOW
-const MIN_UP = 0.15; // price rise over WINDOW, at least this
-const MAX_UP = 0.8; // ... and at most this (already vertical: skip)
-const NEAR_HIGH = 0.92; // price now must sit at least this close to the window high
-const MIN_RQ_SOL = 0.3; // curve real SOL reserves at entry, lower bound
-const MAX_RQ_SOL = 30; // ... upper bound
-const MIN_AGE_SLOTS = 60; // slots since CreateEvent before an entry is allowed
-const FIRST_BUY_SOL = 0.03; // first buy of a position
-const ADD_SOL = 0.02; // each pyramid add while the position is up
-const MAX_STAKE_SOL = 0.09; // most SOL ever put into one position
+const WINDOW = 20; // entry lookback, in slots
+const MIN_NET_SOL = 0.05; // net SOL inflow (buys minus sells) over WINDOW
+const MIN_BUYS = 2; // buy trades over WINDOW
+const MIN_BUYERS = 2; // distinct buying wallets over WINDOW
+const MIN_UP = 0.0; // price rise over WINDOW, at least this
+const MAX_UP = 2.0; // ... and at most this (already vertical: skip)
+const NEAR_HIGH = 0.5; // price now must sit at least this close to the window high
+const MIN_RQ_SOL = 0.1; // curve real SOL reserves at entry, lower bound
+const MAX_RQ_SOL = 10; // ... upper bound
+const MIN_AGE_SLOTS = 10; // slots since CreateEvent before an entry is allowed
+const MAX_AGE_SLOTS = 300; // ... and after this the coin is too old to spray
+const FIRST_BUY_SOL = 0.01; // first buy of a position
+const ADD_SOL = 0.01; // each pyramid add while the position is up
+const MAX_STAKE_SOL = 0.01; // most SOL ever put into one position
 const MIN_BUY_SOL = 0.01; // smallest buy worth sending
 const BUY_SLIP_BPS = 1500;
-const STOP_LOSS = 0.1; // exit when value falls this far below cost
-const TAKE_PROFIT = 0.15; // exit when value rises this far above cost
-const TRAIL_ARM = 0.06; // trailing stop arms once peak value reaches cost * (1 + this)
+const STOP_LOSS = 0.5; // exit when value falls this far below cost
+const TAKE_PROFIT = 1.0; // exit when value rises this far above cost
+const TRAIL_ARM = 10.0; // trailing stop arms once peak value reaches cost * (1 + this)
 const TRAIL = 0.1; // ... then exit when value falls this far below the peak
-const MAX_HOLD_SLOTS = 300; // time-limit exit
+const MAX_HOLD_SLOTS = 900; // time-limit exit
 const FADE_WINDOW = 20; // exit when net SOL over this window falls below ...
-const FADE_NET_SOL = -0.2;
+const FADE_NET_SOL = -1000.0;
 const COOLDOWN_SLOTS = 200; // wait after an exit before the same curve may re-enter
 const MAX_ENTRIES_PER_CURVE = 2;
 const MAX_POSITIONS = 5; // matches caps.max_open_positions
@@ -121,6 +122,7 @@ function flow(t: Tape, now: number, w: number): number {
 function entrySignal(t: Tape, now: number, rqSol: number): boolean {
   if (rqSol < MIN_RQ_SOL || rqSol > MAX_RQ_SOL) return false;
   if (t.created === null || now - t.created < MIN_AGE_SLOTS) return false;
+  if (now - t.created > MAX_AGE_SLOTS) return false;
   const from = now - WINDOW;
   const mid = now - WINDOW / 2;
   let buySol = 0;
